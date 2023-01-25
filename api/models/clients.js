@@ -4,8 +4,9 @@ const mongoose = require("mongoose");
 const clientSchema = mongoose.Schema({
   _id: mongoose.Schema.Types.ObjectId,
   name: { type: String, required: true },
-  idNum: { type: String, required: false },
-  cellphoneNum: { type: String, required: false },
+  idNum: { type: String, required: true },
+  cellphoneNum: { type: String, required: true },
+  dateCreated: { type: Date, required: true },
 });
 
 module.exports = mongoose.model("Client", clientSchema);

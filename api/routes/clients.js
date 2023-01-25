@@ -4,24 +4,28 @@ const express = require("express");
 // Setup express router
 const router = express.Router();
 const mongoose = require("mongoose");
+const { db } = require("../models/clients");
 
 const Client = require("../models/clients");
 
 // Handle incoming GET requests to /clients
 router.get("/", (req, res, next) => {
   Client.find()
-    .select("name idNum cellphoneNum _id")
+    .select(`name idNum cellphoneNum _id`)
     .exec()
     .then((docs) => {
-      const response = {
-        clients: docs,
-      };
-      res.status(200).json(response);
+      res.status(200).json(docs);
     })
     .catch((err) => {
       res.status(500).json({ error: err });
     });
 });
+
+function getLast() {
+  const result = db.Clients.find({}).sort({ _id: -1 }).limit(1);
+
+  console.log(result);
+}
 
 // Handle incoming POST requests to /clients
 router.post("/add", (req, res, next) => {
@@ -31,7 +35,19 @@ router.post("/add", (req, res, next) => {
     name: req.body.name,
     idNum: req.body.idNum,
     cellphoneNum: req.body.cellphoneNum,
+    dateCreated: new Date(),
   });
+  // getLast();
+  /*
+    Get lastest document where date is latest
+    If empty()
+      no = 1
+    else 
+      use no retrieved from latest document
+
+    add this number to create client  
+  */
+
   clients
     .save()
     .then((result) => {
@@ -75,19 +91,20 @@ router.get("/:clientID", (req, res, next) => {
 // Update client information
 router.patch("/:clientID", (req, res, next) => {
   const id = req.params.clientID;
-  const updateOps = {};
-  for (const ops of req.body) {
-    updateOps[ops.propName] = ops.value;
-  }
+  // const updateOps = {};
+  // for (const ops of req.body) {
+  //   updateOps[ops.propName] = ops.value;
+  // }
 
   Client.update(
     { _id: id },
     {
-      $set: updateOps,
+      $set: req.body,
     }
   )
     .exec()
     .then((result) => {
+      console.log(result);
       res.status(200).json(result);
     })
     .catch((err) => {
