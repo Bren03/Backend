@@ -11,6 +11,42 @@ const User = require("../models/users");
 
 var CryptoJS = require("crypto-js");
 
+// Get users
+exports.getUsers = (req, res, next) => {
+  User.find()
+    .select(`user password admin dateCreated _id`)
+    .exec()
+    .then((docs) => {
+      console.log("here");
+      res.status(200).json(docs);
+    })
+    .catch((err) => {
+      res.status(500).json({ error: err });
+    });
+};
+
+// Update user info
+exports.updateUser = (req, res, next) => {
+  const id = req.params.userID;
+
+  User.update(
+    { _id: id },
+    {
+      $set: req.body,
+    }
+  )
+    .exec()
+    .then((result) => {
+      console.log(result);
+      res.status(200).json(result);
+    })
+    .catch((err) => {
+      res.status(500).json({
+        error: err,
+      });
+    });
+};
+
 // Create user Singup
 exports.createUser = (req, res, next) => {
   User.find({ user: req.body.user })
@@ -51,72 +87,163 @@ exports.createUser = (req, res, next) => {
     });
 };
 
+exports.validate = (req, res, next) => {
+  console.log("pqueryParams", req.query);
+  console.log("body", req.body);
+
+  try {
+    const decoded = jwt.decode(req.body?.token);
+    console.log("body", decoded);
+
+    console.log("exp", new Date(decoded.exp));
+    console.log("iat", new Date(decoded.iat));
+
+    User.findOne({ _id: decoded.userID })
+      .exec()
+      .then((result) => {
+        console.log("Result", result);
+
+        if (result.token == req.body?.token) {
+          console.log("MATCH ON TOKEN ");
+
+          const newToken = createToken(result);
+          console.log("newToken ", newToken);
+          console.log("req.body.token ", req.body.token);
+
+          User.updateOne(
+            { _id: result._id },
+            {
+              $set: { token: newToken },
+            }
+          )
+            .exec()
+            .then((result) => {
+              return res.status(200).json({
+                message: "Tokens match!",
+                token: newToken,
+              });
+            })
+            .catch((err) => {
+              // res.status(500).json({
+              //   error: err,
+              // });
+            });
+        } else {
+          return res.status(200).json({
+            message: "Token Mismatch",
+          });
+        }
+      });
+  } catch (e) {
+    return res.status(200).json({
+      message: "Token Mismatch",
+    });
+  }
+};
+
+function createToken(result) {
+  const token = jwt.sign(
+    {
+      user: result.user,
+      userID: result._id,
+      admin: result.admin,
+    },
+    process.env.JWT_KEY,
+    {
+      expiresIn: "1h",
+    }
+  );
+
+  return token;
+}
+
 exports.loginUser = (req, res, next) => {
-  console.log("password here ", req.body.password);
+  console.log("pqueryParams", req.query);
 
-  // console.log(
-  //   "password here ",
-  //   CryptoJS.SHA256.encrypt(
-  //     "testAdminPassword",
-  //     process.env.CRYP_KEY
-  //   ).toString()
-  // );
-
-  // decPassword = CryptoJS.SHA256.decrypt(
-  //   req.body.password,
-  //   process.env.CRYP_KEY
-  // );
-  // console.log("decPassword ", decPassword);
-  // originPassword = decPassword.toString(CryptoJS.enc.Utf8);
-
-  // console.log("originPassword ", originPassword, "123123");
+  const queryParameters = req.query;
 
   const user = {
     user: req.body.user,
     password: req.body.password,
   };
-  // req.body.password = originPassword;
 
-  User.find({ user: user.user })
-    .exec()
-    .then((user) => {
-      if (user.length < 1) {
-        return res.status(401).json({
-          message: "Authorization failed!",
-        });
-      }
-      bcrypt.compare(req.body.password, user[0].password, (err, result) => {
-        if (err) {
-          return res.status(401).json({
-            message: "Authorization failed!",
-          });
-        }
-        if (result) {
-          const token = jwt.sign(
+  if (queryParameters.token) {
+    // Fetch token and compare to user ID
+    User.find({ user: user.user })
+      .exec()
+      .then((user) => {
+        if (req.body.user === user[0].user) {
+          const token = createToken(user[0]);
+
+          User.updateOne(
+            { _id: user[0]._id },
             {
-              user: user[0].user,
-              userID: user[0]._id,
-              admin: user[0].admin,
-            },
-            process.env.JWT_KEY,
-            {
-              expiresIn: "1h",
+              $set: { token: token },
             }
-          );
+          )
+            .exec()
+            .then((result) => {
+              console.log(result);
+              // res.status(200).json(result);
+            })
+            .catch((err) => {
+              // res.status(500).json({
+              //   error: err,
+              // });
+            });
 
           return res.status(200).json({
             message: "Authorization successful!",
             token: token,
           });
         }
-        return res.status(401).json({
-          message: "Authorization failed!",
-        });
+      })
+      .catch((err) => {
+        res.status(500).json({ error: err });
       });
-    })
-    .catch((err) => {
-      res.status(500).json({ error: err });
-    });
+  } else {
+    User.find({ user: user.user })
+      .exec()
+      .then((user) => {
+        if (user.length < 1) {
+          return res.status(401).json({
+            message: "Authorization failed!",
+          });
+        }
+        bcrypt.compare(req.body.password, user[0].password, (err, result) => {
+          if (err) {
+            return res.status(401).json({
+              message: "Authorization failed!",
+            });
+          }
+          if (result) {
+            const token = jwt.sign(
+              {
+                user: user[0].user,
+                userID: user[0]._id,
+                admin: user[0].admin,
+              },
+              process.env.JWT_KEY,
+              {
+                expiresIn: "1h",
+              }
+            );
+
+            // Clients.users.updateOne({token : token})
+            return res.status(200).json({
+              message: "Authorization successful!",
+              token: token,
+            });
+          }
+          return res.status(401).json({
+            message: "Authorization failed!",
+          });
+        });
+      })
+      .catch((err) => {
+        res.status(500).json({ error: err });
+      });
+  }
 };
 
 exports.deleteUser = (req, res, next) => {
