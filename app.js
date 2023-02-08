@@ -4,11 +4,11 @@ const express = require("express");
 const app = express();
 const morgan = require("morgan");
 const bodyParser = require("body-parser");
-
 const mongoose = require("mongoose");
 
 // Import client routes
 const clientsRoutes = require("./api/routes/clients");
+const usersRoutes = require("./api/routes/users");
 
 // Connect to mongoose
 const LOCALHOST = "127.0.0.1";
@@ -48,7 +48,10 @@ app.use(bodyParser.json());
 app.use(function (req, res, next) {
   //Enabling CORS
   res.header("Access-Control-Allow-Origin", "*");
-  res.header("Access-Control-Allow-Methods", "GET,HEAD,OPTIONS,POST,PUT");
+  res.header(
+    "Access-Control-Allow-Methods",
+    "GET, HEAD, OPTIONS, POST, PUT, DELETE, PATCH"
+  );
   res.header(
     "Access-Control-Allow-Headers",
     "Origin, X-Requested-With, Content-Type, Accept, x-client-key, x-client-token, x-client-secret, Authorization"
@@ -58,6 +61,7 @@ app.use(function (req, res, next) {
 
 // Middleware that forwareds requests to clients
 app.use("/clients", clientsRoutes);
+app.use("/users", usersRoutes);
 
 app.use((req, res, next) => {
   const error = new Error("Not found!");
