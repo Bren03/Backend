@@ -9,7 +9,7 @@ const UsersController = require("../coltroller/users");
 router.get("/", UsersController.getUsers);
 
 // Update user
-router.patch("/:userID", UsersController.updateUser);
+// router.patch("/:userID", UsersController.updateUser);
 
 // Add user
 router.post("/signup", UsersController.createUser);

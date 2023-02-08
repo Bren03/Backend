@@ -26,26 +26,26 @@ exports.getUsers = (req, res, next) => {
 };
 
 // Update user info
-exports.updateUser = (req, res, next) => {
-  const id = req.params.userID;
+// exports.updateUser = (req, res, next) => {
+//   const id = req.params.userID;
 
-  User.update(
-    { _id: id },
-    {
-      $set: req.body,
-    }
-  )
-    .exec()
-    .then((result) => {
-      console.log(result);
-      res.status(200).json(result);
-    })
-    .catch((err) => {
-      res.status(500).json({
-        error: err,
-      });
-    });
-};
+//   User.update(
+//     { _id: id },
+//     {
+//       $set: req.body,
+//     }
+//   )
+//     .exec()
+//     .then((result) => {
+//       console.log(result);
+//       res.status(200).json(result);
+//     })
+//     .catch((err) => {
+//       res.status(500).json({
+//         error: err,
+//       });
+//     });
+// };
 
 // Create user Singup
 exports.createUser = (req, res, next) => {
