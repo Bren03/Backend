@@ -1,3 +1,7 @@
 {
-  "env": { "MONGO_ATLAS_PW": "Specialized03" }
+  "env": {
+    "MONGO_ATLAS_PW": "Specialized03",
+    "JWT_KEY": "userToken",
+    "CRYP_KEY": "secret key 123"
+  }
 }
